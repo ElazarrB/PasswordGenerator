@@ -7,43 +7,53 @@ import string
 class NoError(Exception):
     pass    
 
-class password_checker:
+class PasswordChecker:
 
     def __init__(self):
         pass
 
     @staticmethod
-    def check_weak_password(password = ''):
+    def check_weak_password():
+        while True:
+            password = input("\nPlease enter a password to check (or type 'exit' to stop): ")
+            if password.lower() == 'exit':
+                print("Exiting password checking.")
+                break
 
+            weaknesses = PasswordChecker.evaluate_password(password)
+
+            if weaknesses:
+                for weakness in weaknesses:
+                    print(colored(weakness, "red"))
+                PasswordChecker.print_password_tips()
+            else:
+                print(colored("Your password is safe!", "green"))
+            
+                PasswordChecker.generate_password_prompt()
+
+            
+    @staticmethod
+    def evaluate_password(password):
         weaknesses = []
 
         if len(password) < 8:
-            weaknesses.append("password length is less than 8.")
-
+            weaknesses.append("Password length is less than 8.")
         if not re.search(r'[a-z]', password):
-            weaknesses.append("password must contain at least one lowercase letter.")
+            weaknesses.append("Password must contain at least one lowercase letter.")
         if not re.search(r'[A-Z]', password):
-            weaknesses.append("password must contain at least one uppercase letter.")
-
+            weaknesses.append("Password must contain at least one uppercase letter.")
         if not re.search(r'[0-9]', password):
-            weaknesses.append("password must contain at least one number.")
-
+            weaknesses.append("Password must contain at least one number.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            weaknesses.append("password must contain at least one special character.")
+            weaknesses.append("Password must contain at least one special character.")
 
-        weaknesses+=password_checker.is_password_in_breachdb(password=password)
-
-
-        for weakness in weaknesses:
-            print(colored(weakness, "red"))
-
-        if len(weaknesses) >= 1:
-            password_checker.print_password_tips()
-        else:
-            print(colored("Your password is safe!", "green"))
+        weaknesses += PasswordChecker.is_password_in_breachdb(password)
         
-
-        gen_password = input("Would you like to generate strong password? (Y/y)/(N/n): ")
+        return weaknesses
+    
+    @staticmethod
+    def generate_password_prompt():
+        gen_password = input("\nWould you like to generate a strong password? (Y/y)/(N/n): ")
 
         if gen_password.lower() == 'y':
             while True:
@@ -54,22 +64,15 @@ class password_checker:
                     break
 
                 if number.isnumeric():
-                    passwords = password_checker.genereate_password(int(number))
-
+                    passwords = PasswordChecker.generate_password(int(number))
                     for password in passwords:
                         print(colored(password, "green"))
-        else:
-            print("Invalid input. Please enter a valid number or type 'exit' to stop.")
-
-
-
-
+                else:
+                    print("Invalid input. Please enter a valid number or type 'exit' to stop.")
     
     @staticmethod
-    def genereate_password(number_of_passwords=1, breach_file='password_breach.txt'):
-
+    def generate_password(number_of_passwords=1):
         length = 12
-
         uppercase = string.ascii_uppercase
         lowercase = string.ascii_lowercase
         digits = string.digits
@@ -92,28 +95,24 @@ class password_checker:
     
     @staticmethod
     def is_password_in_breachdb(password, breach_file='password_breach.txt'):
-
         weaknesses = []
-
         try:
             with open(breach_file, 'r', encoding='utf-8') as file:
                 for line in file:
                     breached_password = line.strip()
                     if password == breached_password:
-                        weaknesses.append("(alert) Found the same password in breach database!")
+                        weaknesses.append("(ALERT) Found the same password in breach database!")
                     elif Levenshtein.distance(password, breached_password) <= 2:
-                        weaknesses.append("(alert) Similar password found in breach database!")
-
+                        weaknesses.append("(ALERT) Similar password found in breach database!")
         except FileNotFoundError:
-            weaknesses.append("(error) Breach database file not found.")
+            weaknesses.append("(ERROR) Breach database file not found.")
         except Exception as e:
-            weaknesses.append(f"(error) An error occurred: {e}")
-
+            weaknesses.append(f"(ERROR) An error occurred: {e}")
         return weaknesses
 
     @staticmethod
     def print_password_tips():
-        print("💡 Tips for Creating a Strong Password:")
+        print("\n💡 Tips for Creating a Strong Password:")
         print("-" * 40)
         print("1. Use at least 12 characters.")
         print("2. Include a mix of uppercase and lowercase letters.")
@@ -126,3 +125,6 @@ class password_checker:
         print("9. Consider passphrases made of unrelated words, like 'Blue!River@Sky9'.")
         print("10. Change your passwords regularly, especially for sensitive accounts.")
         print("-" * 40)
+
+if __name__ == "__main__":
+    PasswordChecker.check_weak_password()
